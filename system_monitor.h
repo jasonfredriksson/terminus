@@ -5,7 +5,8 @@
 #include <vector>
 
 struct DiskInfo {
-    char letter;        // e.g. 'C'
+    char        letter;       // 'C' on Windows, first char of mount point on POSIX
+    std::string mountPoint;   // e.g. "/" or "C:\\"
     unsigned long long totalGB;
     unsigned long long usedGB;
     float usedPct;
@@ -30,7 +31,7 @@ struct AdapterInfo {
     bool connected;
 };
 
-// Windows system monitoring functions
+// System monitoring functions (cross-platform)
 void InitializeSystemMonitoring();
 void CleanupSystemMonitoring();
 void UpdateNetworkStats();

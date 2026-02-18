@@ -13,10 +13,19 @@ TerminalTab tabs[MAX_TERMINAL_TABS];
 
 static float termCursorBlink = 0.f;
 
+static std::string DefaultCwd() {
+#ifdef _WIN32
+    return "C:\\";
+#else
+    const char* home = getenv("HOME");
+    return home ? home : "/";
+#endif
+}
+
 static void InitTab(int idx) {
     tabs[idx].input  = "";
     tabs[idx].output.clear();
-    tabs[idx].cwd    = "C:\\";
+    tabs[idx].cwd    = DefaultCwd();
     tabs[idx].name   = "Tab " + std::to_string(idx + 1);
     tabs[idx].output.push_back("CRT Dashboard Terminal  -  type commands and press ENTER");
     tabs[idx].output.push_back("Ctrl+T: new tab   Ctrl+W: close tab   Ctrl+Tab: switch");
@@ -25,8 +34,16 @@ static void InitTab(int idx) {
 void RunTerminalCommand(const std::string& cmd) {
     TerminalTab& t = tabs[activeTab];
     t.output.push_back("> " + t.cwd + " $ " + cmd);
+#ifdef _WIN32
     std::string full = "cd /d \"" + t.cwd + "\" && " + cmd + " 2>&1";
+#else
+    std::string full = "cd \"" + t.cwd + "\" && " + cmd + " 2>&1";
+#endif
+#ifdef _WIN32
     FILE* pipe = _popen(full.c_str(), "r");
+#else
+    FILE* pipe = popen(full.c_str(), "r");
+#endif
     if (!pipe) { t.output.push_back("[ERROR] Failed to run command"); return; }
     char buf[256];
     while (fgets(buf, sizeof(buf), pipe)) {
@@ -34,7 +51,11 @@ void RunTerminalCommand(const std::string& cmd) {
         while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) line.pop_back();
         t.output.push_back(line);
     }
+#ifdef _WIN32
     _pclose(pipe);
+#else
+    pclose(pipe);
+#endif
     if (t.output.size() > 200)
         t.output.erase(t.output.begin(), t.output.begin() + (t.output.size() - 200));
 }
